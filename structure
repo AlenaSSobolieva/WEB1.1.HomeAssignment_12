@@ -3,11 +3,14 @@
 # ├── app/
 # │   ├── __init__.py
 # │   ├── models.py
-# │   ├── crud.py  # New file for CRUD operations
-# │   ├── authentication.py  # New file for authentication
+# │   ├── crud.py
+# │   ├── authentication.py
 # │   ├── database.py
-# │   ├── dependencies.py  # New file for dependencies
-# │   └── routes.py
+# │   ├── dependencies.py
+# │   ├── schemas.py
+# │   ├── security.py
+# │   ├── routes.py
+# │   └── utilities.py
 # └── tests/
 #     ├── __init__.py
 #     ├── test_authentication.py

@@ -1,27 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+# fastapi_contacts/app/routes.py
+
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from sqlalchemy.orm import Session
-from fastapi_contacts.app import crud, models, database, authentication
+from fastapi_contacts.app import crud, database, schemas, authentication
 
 router = APIRouter()
 
-@router.post("/register", response_model=models.User)  # Use User as response model
-async def register_user(user: models.UserCreate, db: Session = Depends(database.get_db)):
+@router.post("/register", response_model=schemas.UserResponse)
+async def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     existing_user = crud.get_user_by_email(db, email=user.email)
     if existing_user:
-        raise HTTPException(status_code=409, detail="User already registered with this email")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already registered with this email")
     created_user = crud.create_user(db=db, user=user)
-    return models.User(**created_user.dict())
 
-@router.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordBearer = Depends()):
-    return {"access_token": form_data, "token_type": "bearer"}
+    response_model = schemas.UserResponse(id=created_user.id, email=created_user.email,
+                                          is_active=created_user.is_active)
 
-@router.get("/users/me", response_model=models.User)
-def read_users_me(current_user: models.User = Depends(authentication.get_current_user)):
-    return current_user
+    return response_model
 
-@router.get("/items/")
-def read_item(token: str = Depends(authentication.oauth2_scheme)):
-    return {"token": token}
+@router.post("/token", response_model=schemas.Token)
+async def login_for_access_token(form_data: schemas.OAuth2PasswordRequestForm = Depends()):
+    return authentication.create_access_token(data={"sub": form_data.username})
+
+@router.get("/contacts/{email}", response_model=schemas.Contact)
+async def read_contact(email: str, db: Session = Depends(database.get_db)):
+    contact = crud.get_contact_by_email(db, email=email)
+    if contact is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contact not found")
+    return contact
 
